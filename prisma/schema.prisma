@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("USER") // ADMIN, STAFF, CLAIMENT
+  resetToken String?
+  resetTokenExpires DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  foundItems    FoundItem[] @relation("RecordedBy")
+  claimRequests ClaimRequest[]
+}
+
+model FoundItem {
+  id            String   @id @default(cuid())
+  name          String
+  category      String
+  description   String
+  imageUrl      String?
+  dateFound     DateTime
+  locationFound String
+  transportType String   // Bus, Jeepney, Tricycle
+  routeNumber   String?
+  status        String   @default("FOUND") // FOUND, CLAIMED, DISPOSED
+  
+  recordedById  String
+  recordedBy    User     @relation("RecordedBy", fields: [recordedById], references: [id])
+  
+  claimRequest  ClaimRequest?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ClaimRequest {
+  id          String   @id @default(cuid())
+  description String
+  proofUrl    String?
+  dateLost    DateTime
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  
+  itemId      String   @unique
+  item        FoundItem @relation(fields: [itemId], references: [id])
+  
+  claimantId  String
+  claimant    User     @relation(fields: [claimantId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
